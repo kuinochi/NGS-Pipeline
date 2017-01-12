@@ -1,1 +1,14 @@
 results
+Ref/*.1.bt2
+Ref/*.2.bt2
+Ref/*.3.bt2
+Ref/*.4.bt2
+Ref/*.amb
+Ref/*.ann
+Ref/*.bwt
+Ref/*.dict
+Ref/*.fai
+Ref/*.pac
+Ref/*.rev.1.bt2
+Ref/*.rev.2.bt2
+Ref/*.sa
