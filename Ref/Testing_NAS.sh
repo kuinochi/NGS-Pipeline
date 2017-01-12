@@ -1,0 +1,1 @@
+/home/hpc/cychen/user/dungchi/TaiwanBiobank/ISSAC_BAM/MountDevice/Testing_NAS.sh
