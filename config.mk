@@ -12,7 +12,7 @@
 # e.g. hg19.fasta, hg38.fasta
 # Must be in FASTA format
 
-REF_DIR		= ./Ref/
+REF_DIR		= ./Ref
 REF_FA 		= ${REF_DIR}/ucsc.hg19.mt.fasta
 
 # Common name of genome (used to name files)

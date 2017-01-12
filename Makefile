@@ -13,12 +13,13 @@ include config.mk
 
 # Default goal, print usage
 help: 
-	@printf "\n%s\n%s\n%s\n%s\n%s\n%s\n%s\n%s\n%s\n%s\n%s\n\n" \
+	@printf "\n%s\n%s\n%s\n%s\n%s\n%s\n%s\n%s\n%s\n%s\n%s\n%s\n\n" \
 	"Please enter the steps you want to proceed" \
 	"-------------------------------------------" \
 	"IndexRef       --  Indexing a FASTA file by four tools:" \
 	"                   bwa index, samtools faidx, bowtie2-build" \
 	"                   and CreateSequenceDictionary of picard." \
+	"alignment      --  Align ther reads to the reference genome by both bwa-mem and bowtie2" \
 	"bwa            --  Align the reads to the reference genome by bwa-mem" \
 	"bowtie2        --  Align the reads to the reference genome by bowtie2" \
 	"Process        --  Process SAM file to BAM file by Picard:" \
@@ -27,9 +28,7 @@ help:
 	"vairants_gatk  --  Variants Calling (SNP/INDELs) by samtools"
 
 
-bwa: 			results/alignment/bwa/*.sam
-bowtie2: 		results/alignment/bowtie2/*.sam
-Process: 		index_ref ${BAM_FILE}
+Process: 		IndexRef ${BAM_FILE}
 variants_sam:		$
 vairants_gatk:
 
@@ -46,7 +45,7 @@ _BOWTIE2_INDEX		= $(addsuffix ${_BOWTIE2_INDEX_END}, ${REF_FA})
 _PICARD_DICT		= $(addsuffix .dict, ${REF_FA})
 
 IndexRef: ${_SAMTOOLS_INDEX} ${_BWA_INDEX} ${_BOWTIE2_INDEX} ${_PICARD_DICT}
-	@printf "\n%s\n%s\n" \
+	@printf "\n%s\n%s\n\n" \
 	"The file:  ${REF_FA}  has been indexed." \
 	"Check the folder: ${REF_DIR}"
 
@@ -63,7 +62,7 @@ ${_BWA_INDEX}: ${REF_FA}
 	"#--- Start indexing by bwa..."
 	${BWA} index -a bwtsw $<
 	@printf "%s\n" \
-	"#--- BWA Indexing is done! \n"
+	"#--- BWA Indexing is done!"
 	@touch ${_BWA_INDEX}
 
 ${_BOWTIE2_INDEX}: ${REF_FA}
@@ -71,7 +70,7 @@ ${_BOWTIE2_INDEX}: ${REF_FA}
 	"#--- Start indexing by bowtie2..."
 	${BOWTIE2_BUILD} $< $< 
 	@printf "%s\n" \
-	"#--- Bowtie2 Indexing is done! \n"
+	"#--- Bowtie2 Indexing is done!"
 	@touch ${_BOWTIE2_INDEX}	
 
 ${_PICARD_DICT}: ${REF_FA}
@@ -79,7 +78,7 @@ ${_PICARD_DICT}: ${REF_FA}
 	"#--- Start indexing by picard tools..."
 	${PICARD} CreateSequenceDictionary R=$< O=$@
 	@printf "%s\n" \
-	"#--- Picard Indexing is done! \n"
+	"#--- Picard Indexing is done!"
 	@touch ${_PICARD_DICT}
 
 
@@ -87,30 +86,42 @@ ${_PICARD_DICT}: ${REF_FA}
 #----------------------       Mapping to reference       -------------------------#
 #=================================================================================#
 
+alignment:	bwa bowtie2
+
 #--- Align reads to the ref. genome by BWA
 
-results/alignment/bwa/*.sam: ${READ_DIR}
-	@mkdir -p results/alignment/bwa/ 
+bwa: 			results/alignment/*.bwa.sam
 
-	for i in ${READ_DIR}/*.r1.fq; do F=`basename $$i .r1.fq` ;\
-	echo "Start align sample \"$$F\" by bwa-mem, `date`" ;\
+results/alignment/*.bwa.sam: ${READ_DIR}
+	@mkdir -p results/alignment/
+	@printf "\n[%s] %s\n" "$$(date +%Y\/%m\/%d\ %T)" "Start bwa-mem alignment..."
+
+	@for i in ${READ_DIR}/*.r1.fastq;\
+	do F=`basename $$i .r1.fastq` ;\
+	printf "\n[%s] %s\n\n" "$$(date +%Y\/%m\/%d\ %T)" "Start align sample \"$$F\" ...";\
 	${BWA} ${BWA_PARAM} \
-		${REF_FA} ${READ_DIR}/$$F.r1.fq ${READ_DIR}/$$F.r2.fq > results/alignment/bwa/$$F.${REF_NAME}.bwa.sam ;\
-	echo "Sample \"$$F\" alignment by bwa-mem is done! `date`\n"; done\
+		${REF_FA} ${READ_DIR}/$$F.r1.fastq ${READ_DIR}/$$F.r2.fastq > results/alignment/$$F.${REF_NAME}.bwa.sam ;\
+	printf "\n[%s] %s\n" "$$(date +%Y\/%m\/%d\ %T)" "Sample \"$$F\" alignment by bwa-mem is done!"; done\
 
-	@echo "Mapping by bwa-mem of all samples in the folder \"${READ_DIR}\" is done!"
+	@printf "\n[%s] %s\n\n" "$$(date +%Y\/%m\/%d\ %T)" "Mapping by bwa-mem of all samples in the folder \"${READ_DIR}\" is done!"
 
 
 #--- Align reads to the ref. genome by bowite2
-results/alignment/bowtie2/*.sam: ${READ_DIR} 
-	@mkdir -p results/alignment/bowtie2/;
-	for i in ${READ_DIR}/*.r1.fq; do F=`basename $$i .r1.fq` ;\
-	echo "Start align sample \"$$F\" by bowtie2, `date`" ;\
-	${BOWTIE2} ${BOWTIE2_PARAM} \
-	-1 ${READ_DIR}/$$F.r1.fq -2 ${READ_DIR}/$$F.r2.fq -S results/alignment/bowtie2/$$F.${REF_NAME}.bowtie2.sam;\
-	echo "Sample \"$$F\"" alignment by bowtie2 is done! `date`\n"; done\
 
-	@echo "Mapping by bowtie2 of all samples in the folder \"${READ_DIR}\" is done!"
+bowtie2: 		results/alignment/*.bowtie2.sam
+
+results/alignment/*.bowtie2.sam: ${READ_DIR} 
+	@mkdir -p results/alignment/
+	@printf "\n[%s] %s\n" "$$(date +%Y\/%m\/%d\ %T)" "Start bowtie2 alignment..."
+
+	@for i in ${READ_DIR}/*.r1.fastq; \
+	do F=`basename $$i .r1.fastq` ;\
+	printf "\n[%s] %s\n\n" "$$(date +%Y\/%m\/%d\ %T)" "Start align sample \"$$F\" ..." ;\
+	${BOWTIE2} ${BOWTIE2_PARAM} \
+	-1 ${READ_DIR}/$$F.r1.fastq -2 ${READ_DIR}/$$F.r2.fastq -S results/alignment/$$F.${REF_NAME}.bowtie2.sam;\
+	printf "\n[%s] %s\n" "$$(date +%Y\/%m\/%d\ %T)" "Sample \"$$F\" alignment by bowtie2 is done!"; done\
+
+	@printf "\n[%s] %s\n\n" "$$(date +%Y\/%m\/%d\ %T)" "Mapping by bowtie2 of all samples in the folder \"${READ_DIR}\" is done!"
 
 
 #=================================================================================#
