@@ -36,10 +36,8 @@ vairants_gatk:
 # Output files of indexing.
 _SAMTOOLS_INDEX		= $(addsuffix .fai, ${REF_FA})
 _BWA_INDEX_END	 	= .amb .ann .bwt .pac .sa
-#_BWA_INDEX			= $(addsuffix ${_BWA_INDEX_END}, ${REF_FA})
 _BWA_INDEX			= $(foreach bw, ${_BWA_INDEX_END}, ${REF_FA}${bw})
 _BOWTIE2_INDEX_END	= .1.bt2 .2.bt2 .3.bt2 .4.bt2 .rev.1.bt2 .rev.2.bt2
-#_BOWTIE2_INDEX		= $(addsuffix ${_BOWTIE2_INDEX_END}, ${REF_FA})
 _BOWTIE2_INDEX		= $(foreach bt, ${_BOWTIE2_INDEX_END}, ${REF_FA}${bt})
 _PICARD_DICT		= $(addsuffix .dict, ${REF_FA})
 _Output_Folder = ./results
@@ -96,10 +94,10 @@ ${_Output_Folder}/alignment/*.bwa.sam: ${READ_DIR}
 
 	@for i in ${READ_DIR}/*.r1.fastq;\
 	do F=`basename $$i .r1.fastq` ;\
-	printf "\n[%s] %s\n\n" "$$(date +%Y\/%m\/%d\ %T)" "Start align sample \"$$F\" ...";\
+	printf "\n[%s] %s\n\n" "$$(date +%Y\/%m\/%d\ %T)" "Start align sample \"$${F}\" ...";\
 	${BWA} ${BWA_PARAM} \
-		${REF_FA} ${READ_DIR}/$$F.r1.fastq ${READ_DIR}/$$F.r2.fastq > ${_Output_Folder}/alignment/$$F.${REF_NAME}.bwa.sam ;\
-	printf "\n[%s] %s\n" "$$(date +%Y\/%m\/%d\ %T)" "Sample \"$$F\" alignment by bwa-mem is done!"; done\
+		${REF_FA} ${READ_DIR}/$${F}.r1.fastq ${READ_DIR}/$${F}.r2.fastq > ${_Output_Folder}/alignment/$${F}.${REF_NAME}.bwa.sam ;\
+	printf "\n[%s] %s\n" "$$(date +%Y\/%m\/%d\ %T)" "Sample \"$${F}\" alignment by bwa-mem is done!"; done\
 
 	@printf "\n[%s] %s\n\n" "$$(date +%Y\/%m\/%d\ %T)" "Mapping by bwa-mem of all samples in the folder \"${READ_DIR}\" is done!"
 
@@ -117,10 +115,10 @@ ${_Output_Folder}/alignment/*.bowtie2.sam: ${READ_DIR}
 
 	@for i in ${READ_DIR}/*.r1.fastq; \
 	do F=`basename $$i .r1.fastq` ;\
-	printf "\n[%s] %s\n\n" "$$(date +%Y\/%m\/%d\ %T)" "Start align sample \"$$F\" ..." ;\
+	printf "\n[%s] %s\n\n" "$$(date +%Y\/%m\/%d\ %T)" "Start align sample \"$${F}\" ..." ;\
 	${BOWTIE2} ${BOWTIE2_PARAM} \
-	-1 ${READ_DIR}/$$F.r1.fastq -2 ${READ_DIR}/$$F.r2.fastq -S ${_Output_Folder}/alignment/$$F.${REF_NAME}.bowtie2.sam;\
-	printf "\n[%s] %s\n" "$$(date +%Y\/%m\/%d\ %T)" "Sample \"$$F\" alignment by bowtie2 is done!"; done\
+	-1 ${READ_DIR}/$${F}.r1.fastq -2 ${READ_DIR}/$${F}.r2.fastq -S ${_Output_Folder}/alignment/$${F}.${REF_NAME}.bowtie2.sam;\
+	printf "\n[%s] %s\n" "$$(date +%Y\/%m\/%d\ %T)" "Sample \"$${F}\" alignment by bowtie2 is done!"; done\
 
 	@printf "\n[%s] %s\n\n" "$$(date +%Y\/%m\/%d\ %T)" "Mapping by bowtie2 of all samples in the folder \"${READ_DIR}\" is done!"
 
@@ -129,18 +127,58 @@ ${_Output_Folder}/alignment/*.bowtie2.sam: ${READ_DIR}
 #----------------------      Alignment file process      -------------------------#
 #=================================================================================#
 
-Process:	${BAM_FILE}
-	@printf "%s" "${BAM_FILE}"
+Process:	${_Output_Folder}/alignment/*.srt.dedup.rgmd.bai
+
+	@printf "%s\n" "hi"
+
+
+${_Output_Folder}/alignment/*.srt.dedup.rgmd.bai:  ${_Output_Folder}/alignment/*.srt.dedup.rgmd.bam
+	@printf "\n[%s] %s\n" "$$(date +%Y\/%m\/%d\ %T)" "Start indexing bam files by Picard BuildBamIndex"
+	@for i in ${_Output_Folder}/alignment/*.srt.dedup.rgmd.bam; do \
+		F=`basename $${i} .srt.dedup.rgmd.bam`; \
+		printf "\n[%s] %s\n" "$$(date +%Y\/%m\/%d\ %T)" "Start indexing Sample $${F} by Picard BuildBamIndex..."; \
+		java -jar ${PICARD} BuildBamIndex I=$${i} ; \
+		printf "\n[%s] %s\n" "$$(date +%Y\/%m\/%d\ %T)" "Indexing Sample $${F} by Picard BuildBamIndex is done!"; \
+	done
+	@printf "\n[%s] %s\n" "$$(date +%Y\/%m\/%d\ %T)" "Indexing bam file by Picard BuildBamIndex for all samples in ${_Output_Folder}/alignment is done!"
+
+
+${_Output_Folder}/alignment/*.srt.bam:	${_Output_Folder}/alignment/*.sam
+	@printf "\n[%s] %s\n" "$$(date +%Y\/%m\/%d\ %T)" "Start sorting sam files by Picard SortSam"
+	@for i in ${_Output_Folder}/alignment/*.sam; do \
+		F=`basename $${i} .sam`; \
+		printf "\n[%s] %s\n" "$$(date +%Y\/%m\/%d\ %T)" "Start sorting Sample $${F} by Picard SortSam..."; \
+		java -jar ${PICARD} SortSam I=$${i} O=${_Output_Folder}/alignment/$${F}.srt.bam SO=coordinate; \
+		printf "\n[%s] %s\n" "$$(date +%Y\/%m\/%d\ %T)" "Sorting Sample $${F} by Picard SortSam is done!"; \
+	done
+	@printf "\n[%s] %s\n" "$$(date +%Y\/%m\/%d\ %T)" "Sorting by Picard SortSam for all samples in ${_Output_Folder}/alignment is done!"
+
+
+${_Output_Folder}/alignment/*.srt.dedup.bam: ${_Output_Folder}/alignment/*.srt.bam
+	@printf "\n[%s] %s\n" "$$(date +%Y\/%m\/%d\ %T)" "Start mark duplicate sam files by Picard MarkDuplicates"
+	@for i in ${_Output_Folder}/alignment/*.srt.bam; do \
+		F=`basename $${i} .srt.bam`; \
+		printf "\n[%s] %s\n" "$$(date +%Y\/%m\/%d\ %T)" "Start mark duplicate Sample $${F} by Picard MarkDuplicates..."; \
+		java -jar ${PICARD} MarkDuplicates I=$${i} O=${_Output_Folder}/alignment/$${F}.srt.dedup.bam M=${_Output_Folder}/alignment/$${F}.dedup.metrics.txt ; \
+		printf "\n[%s] %s\n" "$$(date +%Y\/%m\/%d\ %T)" "Mark duplicate Sample $${F} by Picard MarkDuplicates is done!"; \
+	done
+	@printf "\n[%s] %s\n" "$$(date +%Y\/%m\/%d\ %T)" "Mark duplicate by Picard MarkDuplicates for all sample in ${_Output_Folder}/alignment is done!"
 	
 
-${BAM_FILE}: ${_Output_Folder}/alignment/*.srt.bam
-	@for i in ${_Output_Folder}/alignment/*.sam; \
-	do F=`basename $i .sam`; \
-	printf "\n[%s] %s\n" "$$(date +%Y\/%m\/%d\ %T)" "Start sorting Sample $${F} by Picard SortSam..."; \
-	java -jar ${PICARD} SortSam I=$${i}.sam O=${_Output_Folder}/alignment/$${F}.srt.bam SO=coordinate; \
-	printf "\n[%s] %s\n" "$$(date +%Y\/%m\/%d\ %T)" "Sorting Sample $${F} by Picard SortSam id done!"; \
+${_Output_Folder}/alignment/*.srt.dedup.rgmd.bam: ${_Output_Folder}/alignment/*.srt.dedup.bam
+	@printf "\n[%s] %s\n" "$$(date +%Y\/%m\/%d\ %T)" "Start edit @RG tag in bam files by Picard AddOrReplaceReadGroups"
+	@for i in ${_Output_Folder}/alignment/*.srt.dedup.bam; do \
+		F=`basename $${i} .srt.dedup.bam`; \
+		printf "\n[%s] %s\n" "$$(date +%Y\/%m\/%d\ %T)" "Start Edit @RG for Sample $${F} by Picard AddOrReplaceReadGroups..."; \
+		java -jar ${PICARD} AddOrReplaceReadGroups \
+			I=$${i} \
+			O=${_Output_Folder}/alignment/$${F}.srt.dedup.rgmd.bam \
+			RGID=$${F} RGSM=S_$${F} RGLB=Lib_$${F} RGPL=Illumina \
+			M=${_Output_Folder}/alignment/$${F}.dedup.metrics.txt ; \
+			printf "\n[%s] %s\n" "$$(date +%Y\/%m\/%d\ %T)" "@RG is edited Sample $${F} by Picard AddOrReplaceReadGroups is done!";\
 	done
-	@printf "\n[%s] %s\n" "$$(date +%Y\/%m\/%d\ %T)" "Sorting by Picard SortSam for all samples in ${_Output_Folder}alignment is done!"
+	@printf "\n[%s] %s\n" "$$(date +%Y\/%m\/%d\ %T)" "@RG is edited by Picard AddOrReplaceReadGroups for all sample in ${_Output_Folder}/alignment!"
+
 
 # for i in `ls *.sam`; do
 #    F=`basename $i .sam`
