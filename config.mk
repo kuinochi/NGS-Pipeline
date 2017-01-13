@@ -45,6 +45,13 @@ IN_BAM 		=
 IN_VCF 		=
 
 # ------------------------------------------------------ #
+# --- Paths to knownvcf files
+# ------------------------------------------------------ #
+MILLS_KG_INDEL=/home/hpc/cychen/user/dungchi/reference/knownvcf/hg19/Mills_and_1000G_gold_standard.indels.hg19.sites.vcf.gz
+DBSNP_138=/home/hpc/cychen/user/dungchi/reference/knownvcf/hg19/dbsnp_138.hg19.vcf.gz
+KGPHASE1_INDEL=/home/hpc/cychen/user/dungchi/reference/knownvcf/hg19/1000G_phase1.indels.hg19.sites.vcf.gz
+
+# ------------------------------------------------------ #
 # --- Paths to external programs     
 # ------------------------------------------------------ #
 
@@ -73,6 +80,9 @@ BWA_PARAM 		= mem -t ${CPU} -a -M
 
 # Bowtie2 parameters
 BOWTIE2_PARAM 	= --end-to-end --sensitive -p ${CPU} -x ${REF_FA} -q
+
+# Number of node or dataset used by GATK
+GATK_NMT = 1
 
 # SAMtools mpileup parameters
 SNP_MIN_COV	=	5

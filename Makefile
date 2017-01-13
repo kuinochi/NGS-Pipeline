@@ -212,6 +212,65 @@ ${_Output_Folder}/alignment/*.srt.bam:	${_Output_Folder}/alignment/*.sam
 #-----------------------        GATK Preprocess        ---------------------------#
 #=================================================================================#
 
+Process_gatk: ${_Output_Folder}/alignment/*.realign.recal.bam
+	@printf "\n%s\n%s\n\n" "The bam file in ${_Output_Folder}/alignment have all conducted the GATK processing:" \
+	"RealignerTargetCreator --> IndelRealigner --> BaseRecalibrator --> PrintReads" \
+	"You can go next step (e.g. variants calling) now."
+
+${_Output_Folder}/alignment/*.realign.recal.bam: ${_Output_Folder}/alignment/*.base.recali.table
+	@printf "\n[%s] %s\n" "$$(date +%Y\/%m\/%d\ %T)" "Start GATK PrintReads"
+	@for i in ${_Output_Folder}/alignment/*.base.recali.table; do \
+		F=`basename $${i} .base.recali.table`; \
+		printf "\n[%s] %s\n" "$$(date +%Y\/%m\/%d\ %T)" "Start GATK PrintReads for sample $${F}..."; \
+		\
+		java -jar ${GATK} -T PrintReads \
+			-R ${REF_FA} \
+			-nct ${GATK_NMT} \
+			-I ${_Output_Folder}/alignment/$${F}.realign.bam \
+			-BQSR ${_Output_Folder}/alignment/$${F}.base.recali.table \
+			-o ${_Output_Folder}/alignment/$${F}.realign.recal.bam; \
+		\
+		printf "\n[%s] %s\n" "$$(date +%Y\/%m\/%d\ %T)" "GATK PrintReads for sample $${F} is done!"; \
+		done
+	@printf "\n[%s] %s\n" "$$(date +%Y\/%m\/%d\ %T)" "GATK PrintReads for all sample in {_Output_Folder} is done!"
+
+
+${_Output_Folder}/alignment/*.base.recali.table: ${MILLS_KG_INDEL} ${DBSNP_138} ${KGPHASE1_INDEL} ${_Output_Folder}/alignment/*.realign.bam
+	@printf "\n[%s] %s\n" "$$(date +%Y\/%m\/%d\ %T)" "Start GATK BaseRecalibrator"
+	@for i in ${_Output_Folder}/alignment/*.realign.bam; do \
+		F=`basename $${i} .realign.bam`; \
+		printf "\n[%s] %s\n" "$$(date +%Y\/%m\/%d\ %T)" "Start GATK BaseRecalibrator for sample $${F}..."; \
+		\
+		java -jar ${GATK} -T BaseRecalibrator \
+			-R ${REF_FA} \
+			-nct ${GATKNCT} \
+			-nt 1 \
+			-I ${_Output_Folder}/alignment/$${F}.realign.bam \
+			-knownSites ${DBSNP_138} \
+			-knownSites ${MILLS_KG_INDEL} \
+			-knownSites ${KGPHASE1_INDEL} \
+			-o ${_Output_Folder}/alignment/$${F}.base.recali.table; \
+		\
+		printf "\n[%s] %s\n" "$$(date +%Y\/%m\/%d\ %T)" "GATK BaseRecalibrator for sample $${F} is done!"; \
+		done
+	@printf "\n[%s] %s\n" "$$(date +%Y\/%m\/%d\ %T)" "GATK BaseRecalibrator all sample in {_Output_Folder} is done!"
+
+
+${_Output_Folder}/alignment/*.realign.bam: ${MILLS_KG_INDEL} ${KGPHASE1_INDEL} ${_Output_Folder}/alignment/*.target_intervals.list
+	@printf "\n[%s] %s\n" "$$(date +%Y\/%m\/%d\ %T)" "Start GATK IndelRealigner"
+	@for i in ${_Output_Folder}/alignment/*.target_intervals.list; do \
+		F=`basename $${i} .target_intervals.list`; \
+		printf "\n[%s] %s\n" "$$(date +%Y\/%m\/%d\ %T)" "Start GATK IndelRealigner for sample $${F}..."; \
+		\
+		java -jar ${GATK} -T IndelRealigner \
+			-R ${REF_FA} \
+			-I ${_Output_Folder}/alignment/$${F}.srt.dedup.rgmd.bam \
+			-known ${MILLS_KG_INDEL} \
+			-known ${KGPHASE1_INDEL} \
+			-targetIntervals ${_Output_Folder}/alignment/$${F}.target_intervals.list \
+			-o ${_Output_Folder}/alignment/$${F}.realign.bam \
+			--filter_bases_not_stored; \
+
 
 
 #=================================================================================#
