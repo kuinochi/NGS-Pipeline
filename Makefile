@@ -10,24 +10,23 @@ include config.mk
 # 	.marked.realigned.fixed.recal.indexed
 
 # Default goal, print usage
+
 help: 
-	@printf "\n%s\n%s\n%s\n%s\n%s\n%s\n%s\n%s\n%s\n%s\n%s\n%s\n\n" \
+	@printf "\n%s\n%s\n%s\n%s\n%s\n%s\n%s\n%s\n%s\n%s\n%s\n%s\n%s\n\n" \
 	"Please enter the steps you want to proceed" \
 	"-------------------------------------------" \
-	"IndexRef       --  Indexing a FASTA file by four tools:" \
-	"                   bwa index, samtools faidx, bowtie2-build" \
-	"                   and CreateSequenceDictionary of picard." \
-	"alignment      --  Align ther reads to the reference genome by both bwa-mem and bowtie2" \
-	"bwa            --  Align the reads to the reference genome by bwa-mem" \
-	"bowtie2        --  Align the reads to the reference genome by bowtie2" \
-	"Process        --  Process SAM file to BAM file by Picard:" \
-	"                   Sorting, Mark Duplicates, Edit @RG, Indexing" \
-	"variants_sam   --  Variants Calling (SNP/INDELs) by samtools " \
-	"vairants_gatk  --  Variants Calling (SNP/INDELs) by samtools"
+	"IndexRef           --  Indexing a FASTA file by four tools:" \
+	"                       bwa index, samtools faidx, bowtie2-build and CreateSequenceDictionary of picard." \
+	"alignment          --  Align the reads to the reference genome by both bwa-mem and bowtie2" \
+	"bwa                --  Align the reads to the reference genome by bwa-mem" \
+	"bowtie2            --  Align the reads to the reference genome by bowtie2" \
+	"Preprocess         --  Process SAM file to BAM file by Picard:" \
+	"                       Sorting, Mark Duplicates, Edit @RG, Indexing" \
+	"Process_gatk       --  Process BAM file by GATK, including:" \
+	"                       RealignerTargetCreator, IndelRealigner, BaseRecalibrator, PrintReads" \
+	"callvariants_sam   --  Variants Calling (SNP/INDELs) by samtools " \
+	"callvairants_gatk  --  Variants Calling (SNP/INDELs) by samtools"
 
-
-variants_sam:		
-vairants_gatk:
 
 #=================================================================================#
 #--------------------       Indexing reference FASTA       -----------------------#
@@ -44,37 +43,37 @@ _Output_Folder = ./results
 
 
 IndexRef: ${_SAMTOOLS_INDEX} ${_BWA_INDEX} ${_BOWTIE2_INDEX} ${_PICARD_DICT}
-	@printf "\n%s\n%s\n\n" "The file:  ${REF_FA}  has been indexed." "Check the folder: ${REF_DIR} "
+	@printf "\n%s\n%s\n\n" "The file:  ${REF_FA}  has alreadey been indexed." "Check the folder: ${REF_DIR} "
 
 ${_SAMTOOLS_INDEX}: ${REF_FA}
 	@printf "\n%s\n" "#--- Start indexing by samtools..."
-	
+	\
 	${SAMTOOL} faidx $<
-	
+	\
 	@printf "%s\n" "#--- Samtools Indexing is done!"
 	@touch ${_SAMTOOLS_INDEX}
 
 ${_BWA_INDEX}: ${REF_FA}
 	@printf "\n%s\n" "#--- Start indexing by bwa..."
-	
+	\
 	${BWA} index -a bwtsw $<
-	
+	\
 	@printf "%s\n" "#--- BWA Indexing is done!"
 	@touch ${_BWA_INDEX}
 
 ${_BOWTIE2_INDEX}: ${REF_FA} ${REF_FA}
 	@printf "\n%s\n" "#--- Start indexing by bowtie2..."
-	
+	\
 	${BOWTIE2_BUILD} $< $<
-	
+	\
 	@printf "%s\n" "#--- Bowtie2 Indexing is done!"
 	@touch ${_BOWTIE2_INDEX}	
 
 ${_PICARD_DICT}: ${REF_FA}
 	@printf "\n%s\n" "#--- Start indexing by picard tools..."
-	
+	\
 	java -jar ${PICARD} CreateSequenceDictionary R=$< O=$@
-	
+	\
 	@printf "%s\n" "#--- Picard Indexing is done!"
 	@touch ${_PICARD_DICT}
 
@@ -103,13 +102,13 @@ ${_Output_Folder}/alignment/*.bwa.sam: ${READ_DIR}
 	@for i in ${READ_DIR}/*.r1.fastq;\
 		do F=`basename $$i .r1.fastq` ;\
 		printf "\n[%s] %s\n\n" "$$(date +%Y\/%m\/%d\ %T)" "Start align sample \"$${F}\" ...";\
-	
+		\
 		${BWA} ${BWA_PARAM} \
 			${REF_FA} \
 			${READ_DIR}/$${F}.r1.fastq \
 			${READ_DIR}/$${F}.r2.fastq \
 			> ${_Output_Folder}/alignment/$${F}.${REF_NAME}.bwa.sam ;\
-
+		\
 	printf "\n[%s] %s\n" "$$(date +%Y\/%m\/%d\ %T)" "Sample \"$${F}\" alignment by bwa-mem is done!"; done\
 
 	@printf "\n[%s] %s\n\n" "$$(date +%Y\/%m\/%d\ %T)" "Mapping by bwa-mem of all samples in the folder \"${READ_DIR}\" is done!"
@@ -129,12 +128,12 @@ ${_Output_Folder}/alignment/*.bowtie2.sam: ${READ_DIR}
 	@for i in ${READ_DIR}/*.r1.fastq; \
 		do F=`basename $$i .r1.fastq` ;\
 		printf "\n[%s] %s\n\n" "$$(date +%Y\/%m\/%d\ %T)" "Start align sample \"$${F}\" ..." ;\
-		
+		\
 		${BOWTIE2} ${BOWTIE2_PARAM} \
 		-1 ${READ_DIR}/$${F}.r1.fastq \
 		-2 ${READ_DIR}/$${F}.r2.fastq \
 		-S ${_Output_Folder}/alignment/$${F}.${REF_NAME}.bowtie2.sam;\
-		
+		\
 		printf "\n[%s] %s\n" "$$(date +%Y\/%m\/%d\ %T)" "Sample \"$${F}\" alignment by bowtie2 is done!"; done\
 
 	@printf "\n[%s] %s\n\n" "$$(date +%Y\/%m\/%d\ %T)" "Mapping by bowtie2 of all samples in the folder \"${READ_DIR}\" is done!"
@@ -144,9 +143,9 @@ ${_Output_Folder}/alignment/*.bowtie2.sam: ${READ_DIR}
 #----------------------      Alignment file process      -------------------------#
 #=================================================================================#
 
-Process:	${_Output_Folder}/alignment/*.srt.dedup.rgmd.bai
+Preprocess:	${_Output_Folder}/alignment/*.srt.dedup.rgmd.bai
 
-	@printf "%s\n" "hi"
+	@printf "\n%s\n\n" "All file in ${_Output_Folder}/alignment have already been processed."
 
 
 ${_Output_Folder}/alignment/*.srt.dedup.rgmd.bai:  ${_Output_Folder}/alignment/*.srt.dedup.rgmd.bam
@@ -154,9 +153,9 @@ ${_Output_Folder}/alignment/*.srt.dedup.rgmd.bai:  ${_Output_Folder}/alignment/*
 	@for i in ${_Output_Folder}/alignment/*.srt.dedup.rgmd.bam; do \
 		F=`basename $${i} .srt.dedup.rgmd.bam`; \
 		printf "\n[%s] %s\n" "$$(date +%Y\/%m\/%d\ %T)" "Start indexing Sample $${F} by Picard BuildBamIndex..."; \
-
+		\
 		java -jar ${PICARD} BuildBamIndex I=$${i} ; \
-		
+		\
 		printf "\n[%s] %s\n" "$$(date +%Y\/%m\/%d\ %T)" "Indexing Sample $${F} by Picard BuildBamIndex is done!"; \
 	done
 	@printf "\n[%s] %s\n" "$$(date +%Y\/%m\/%d\ %T)" "Indexing bam file by Picard BuildBamIndex for all samples in ${_Output_Folder}/alignment is done!"
@@ -167,13 +166,12 @@ ${_Output_Folder}/alignment/*.srt.dedup.rgmd.bam: ${_Output_Folder}/alignment/*.
 	@for i in ${_Output_Folder}/alignment/*.srt.dedup.bam; do \
 		F=`basename $${i} .srt.dedup.bam`; \
 		printf "\n[%s] %s\n" "$$(date +%Y\/%m\/%d\ %T)" "Start Edit @RG for Sample $${F} by Picard AddOrReplaceReadGroups..."; \
-		
+		\
 		java -jar ${PICARD} AddOrReplaceReadGroups \
 			I=$${i} \
 			O=${_Output_Folder}/alignment/$${F}.srt.dedup.rgmd.bam \
-			RGID=$${F} RGSM=S_$${F} RGLB=Lib_$${F} RGPL=Illumina \
-			M=${_Output_Folder}/alignment/$${F}.dedup.metrics.txt ; \
-		
+			RGID=$${F} RGSM=S_$${F} RGLB=Lib_$${F} RGPL=Illumina RGPU=Unit_$${F};\
+		\
 		printf "\n[%s] %s\n" "$$(date +%Y\/%m\/%d\ %T)" "@RG is edited Sample $${F} by Picard AddOrReplaceReadGroups is done!";\
 	done
 	@printf "\n[%s] %s\n" "$$(date +%Y\/%m\/%d\ %T)" "@RG is edited by Picard AddOrReplaceReadGroups for all sample in ${_Output_Folder}/alignment!"
@@ -184,12 +182,12 @@ ${_Output_Folder}/alignment/*.srt.dedup.bam: ${_Output_Folder}/alignment/*.srt.b
 	@for i in ${_Output_Folder}/alignment/*.srt.bam; do \
 		F=`basename $${i} .srt.bam`; \
 		printf "\n[%s] %s\n" "$$(date +%Y\/%m\/%d\ %T)" "Start mark duplicate Sample $${F} by Picard MarkDuplicates..."; \
-		
+		\
 		java -jar ${PICARD} MarkDuplicates \
 			I=$${i} \
 			O=${_Output_Folder}/alignment/$${F}.srt.dedup.bam \
 			M=${_Output_Folder}/alignment/$${F}.dedup.metrics.txt ; \
-		
+		\
 		printf "\n[%s] %s\n" "$$(date +%Y\/%m\/%d\ %T)" "Mark duplicate Sample $${F} by Picard MarkDuplicates is done!"; \
 	done
 	@printf "\n[%s] %s\n" "$$(date +%Y\/%m\/%d\ %T)" "Mark duplicate by Picard MarkDuplicates for all sample in ${_Output_Folder}/alignment is done!"
@@ -200,41 +198,53 @@ ${_Output_Folder}/alignment/*.srt.bam:	${_Output_Folder}/alignment/*.sam
 	@for i in ${_Output_Folder}/alignment/*.sam; do \
 		F=`basename $${i} .sam`; \
 		printf "\n[%s] %s\n" "$$(date +%Y\/%m\/%d\ %T)" "Start sorting Sample $${F} by Picard SortSam..."; \
-		
+		\
 		java -jar ${PICARD} SortSam \
 			I=$${i} \
 			O=${_Output_Folder}/alignment/$${F}.srt.bam \
 			SO=coordinate; \
-		
+		\
 		printf "\n[%s] %s\n" "$$(date +%Y\/%m\/%d\ %T)" "Sorting Sample $${F} by Picard SortSam is done!"; \
 	done
 	@printf "\n[%s] %s\n" "$$(date +%Y\/%m\/%d\ %T)" "Sorting by Picard SortSam for all samples in ${_Output_Folder}/alignment is done!"
 
-
-# for i in `ls *.sam`; do
-#    F=`basename $i .sam`
-#    echo -e "Sorting sample $F... start at `date`\n"
-#    java -jar $PICARD SortSam I=$F.sam O=$F.srt.bam SO=coordinate
-#    echo -e "Sample $F sroting by is done... at `date` \n"
- 
-#    echo -e "Marking duplicate of sample $F.... start at `date`\n"
-#    java -jar $PICARD MarkDuplicates I=$F.srt.bam O=$F.srt.dedup.bam M=$F.metrics.txt
-#    echo -e "Sample $F mark_duplicate is done... at `date` \n"
- 
-#    echo -e "Edit @RG label of sample $F... start at `date`\n"
-#    java -jar $PICARD AddOrReplaceReadGroups I=$F.srt.dedup.bam O=$F.srt.dedup.rgmd.bam RGID=$F RGSM=Sample_$F RGLB=lib_$F RGPL=ILLUMINA RGPU=unit_$F
-#    echo -e "Sample $F editing RG is done... at `date`\n"
- 
-#    echo -e "Building bam index of sample $F... start at `date`\n"
-#    java -jar $PICARD BuildBamIndex I=$F.srt.dedup.rgmd.bam
-#    echo -e "Sample $F buildbamindex is done... at `date`\n"
-#  done
+#=================================================================================#
+#-----------------------        GATK Preprocess        ---------------------------#
+#=================================================================================#
 
 
 
 #=================================================================================#
 #------------------------       Variants Calling       ---------------------------#
 #=================================================================================#
+
+callvariant_sam: ${_Output_Folder}/vcf/*.samtools.vcf
+	@printf "\n%s\n%s\n\n" \
+	"The bam file in ${_Output_Folder}/alignment have all conducted the variants calling by samtools." \
+	"Check the folder: ${_Output_Folder}/vcf/ and ${_Output_Folder}/alignment/ "
+
+${_Output_Folder}/vcf/*.samtools.vcf: ${_Output_Folder}/alignment/*.srt.dedup.rgmd.bai
+	@mkdir -p ${_Output_Folder}/vcf
+	@printf "\n[%s] %s\n" "$$(date +%Y\/%m\/%d\ %T)" "Start calling variants by samtools"
+	@for i in ${_Output_Folder}/alignment/*.srt.dedup.rgmd.bam; do \
+		F=`basename $${i} .srt.dedup.rgmd.bam`; \
+		printf "\n[%s] %s\n" "$$(date +%Y\/%m\/%d\ %T)" "Start calling variants for sample $${F} by samtools..."; \
+		\
+		${SAMTOOL} mpileup \
+			-t DP,DV \
+			-Buf ${REF_FA} \
+			${_Output_Folder}/alignment/$${F}.srt.dedup.rgmd.bam | \
+		${BCFTOOL} call \
+			-vmOv \
+			-o - > ${_Output_Folder}/vcf/$${F}.samtools.raw.vcf; \
+		\
+		printf "\n[%s] %s\n" "$$(date +%Y\/%m\/%d\ %T)" "Calling variants for sample $${F} by samtools is done!"; \
+	done
+	@printf "\n[%s] %s\n" "$$(date +%Y\/%m\/%d\ %T)" "Calling variants for all sample in ${_Output_Folder}/alignment by samtools is done!"
+
+
+
+
 
 #---- Local realignment, step 1: RealignTargetCreator
 results/${ID}.bwa.target_interval.list: 

@@ -56,7 +56,7 @@ PICARD 			=  /home/hpc/cychen/user/dungchi/bin/picard-tools-1.139/picard.jar
 GATK 			=  /home/hpc/cychen/user/dungchi/bin/GATK/GenomeAnalysisTK.jar
 
 #ANNOVAR 		= $BIN/annovar
-#BCFTOOL 		= $BIN/bcftools/bcftools
+BCFTOOL 		= /home/hpc/cychen/user/dungchi/bin/bcftool
 #BEDTOOLS		=
 #VCFTOOLS		=
 #TABIX			=
