@@ -22,7 +22,7 @@ help:
 	"bowtie2            --  Align the reads to the reference genome by bowtie2" \
 	"Preprocess         --  Process SAM file to BAM file by Picard:" \
 	"                       Sorting, Mark Duplicates, Edit @RG, Indexing" \
-	"Process_gatk       --  Process BAM file by GATK, including:" \
+	"GATK_preprocess    --  Process BAM file by GATK, including:" \
 	"                       RealignerTargetCreator, IndelRealigner, BaseRecalibrator, PrintReads" \
 	"callvariants_sam   --  Variants Calling (SNP/INDELs) by samtools " \
 	"callvairants_gatk  --  Variants Calling (SNP/INDELs) by samtools"
@@ -38,42 +38,45 @@ _BWA_INDEX_END	 	= .amb .ann .bwt .pac .sa
 _BWA_INDEX			= $(foreach bw, ${_BWA_INDEX_END}, ${REF_FA}${bw})
 _BOWTIE2_INDEX_END	= .1.bt2 .2.bt2 .3.bt2 .4.bt2 .rev.1.bt2 .rev.2.bt2
 _BOWTIE2_INDEX		= $(foreach bt, ${_BOWTIE2_INDEX_END}, ${REF_FA}${bt})
-_PICARD_DICT		= $(addsuffix .dict, ${REF_FA})
+#_PICARD_DICT		= $(addsuffix .dict, ${REF_FA})
+_PICARD_DICT   = $(patsubst %.fasta, %.dict, ${REF_FA})
 _Output_Folder = ./results
 
 
+
 IndexRef: ${_SAMTOOLS_INDEX} ${_BWA_INDEX} ${_BOWTIE2_INDEX} ${_PICARD_DICT}
-	@printf "\n%s\n%s\n\n" "The file:  ${REF_FA}  has alreadey been indexed." "Check the folder: ${REF_DIR} "
+	@printf "\n%s\n%s\n\n" "The file:  ${REF_FA}  has alreadey been indexed." "Check the folder: ${REF_DIR}" 
+	#${_PICARD_DICT}
 
 ${_SAMTOOLS_INDEX}: ${REF_FA}
 	@printf "\n%s\n" "#--- Start indexing by samtools..."
-	\
+	
 	${SAMTOOL} faidx $<
-	\
+	
 	@printf "%s\n" "#--- Samtools Indexing is done!"
 	@touch ${_SAMTOOLS_INDEX}
 
 ${_BWA_INDEX}: ${REF_FA}
 	@printf "\n%s\n" "#--- Start indexing by bwa..."
-	\
+	
 	${BWA} index -a bwtsw $<
-	\
+	
 	@printf "%s\n" "#--- BWA Indexing is done!"
 	@touch ${_BWA_INDEX}
 
 ${_BOWTIE2_INDEX}: ${REF_FA} ${REF_FA}
 	@printf "\n%s\n" "#--- Start indexing by bowtie2..."
-	\
+
 	${BOWTIE2_BUILD} $< $<
-	\
+	
 	@printf "%s\n" "#--- Bowtie2 Indexing is done!"
 	@touch ${_BOWTIE2_INDEX}	
 
 ${_PICARD_DICT}: ${REF_FA}
 	@printf "\n%s\n" "#--- Start indexing by picard tools..."
-	\
+	
 	java -jar ${PICARD} CreateSequenceDictionary R=$< O=$@
-	\
+	
 	@printf "%s\n" "#--- Picard Indexing is done!"
 	@touch ${_PICARD_DICT}
 
@@ -212,7 +215,7 @@ ${_Output_Folder}/alignment/*.srt.bam:	${_Output_Folder}/alignment/*.sam
 #-----------------------        GATK Preprocess        ---------------------------#
 #=================================================================================#
 
-Process_gatk: ${_Output_Folder}/alignment/*.realign.recal.bam
+GATK_preprocess: ${_Output_Folder}/alignment/*.realign.recal.bam
 	@printf "\n%s\n%s\n\n" "The bam file in ${_Output_Folder}/alignment have all conducted the GATK processing:" \
 	"RealignerTargetCreator --> IndelRealigner --> BaseRecalibrator --> PrintReads" \
 	"You can go next step (e.g. variants calling) now."
@@ -243,7 +246,7 @@ ${_Output_Folder}/alignment/*.base.recali.table: ${MILLS_KG_INDEL} ${DBSNP_138} 
 		\
 		java -jar ${GATK} -T BaseRecalibrator \
 			-R ${REF_FA} \
-			-nct ${GATKNCT} \
+			-nct ${GATK_NMT} \
 			-nt 1 \
 			-I ${_Output_Folder}/alignment/$${F}.realign.bam \
 			-knownSites ${DBSNP_138} \
@@ -253,7 +256,7 @@ ${_Output_Folder}/alignment/*.base.recali.table: ${MILLS_KG_INDEL} ${DBSNP_138} 
 		\
 		printf "\n[%s] %s\n" "$$(date +%Y\/%m\/%d\ %T)" "GATK BaseRecalibrator for sample $${F} is done!"; \
 		done
-	@printf "\n[%s] %s\n" "$$(date +%Y\/%m\/%d\ %T)" "GATK BaseRecalibrator all sample in {_Output_Folder} is done!"
+	@printf "\n[%s] %s\n" "$$(date +%Y\/%m\/%d\ %T)" "GATK BaseRecalibrator for all sample in {_Output_Folder} is done!"
 
 
 ${_Output_Folder}/alignment/*.realign.bam: ${MILLS_KG_INDEL} ${KGPHASE1_INDEL} ${_Output_Folder}/alignment/*.target_intervals.list
@@ -270,6 +273,31 @@ ${_Output_Folder}/alignment/*.realign.bam: ${MILLS_KG_INDEL} ${KGPHASE1_INDEL} $
 			-targetIntervals ${_Output_Folder}/alignment/$${F}.target_intervals.list \
 			-o ${_Output_Folder}/alignment/$${F}.realign.bam \
 			--filter_bases_not_stored; \
+		\
+		printf "\n[%s] %s\n" "$$(date +%Y\/%m\/%d\ %T)" "GATK IndelRealigner for sample $${F} is done!"; \
+		done
+	@printf "\n[%s] %s\n" "$$(date +%Y\/%m\/%d\ %T)" "GATK IndelRealigner for all sample in {_Output_Folder} is done!"
+
+
+${_Output_Folder}/alignment/*.target_intervals.list: ${MILLS_KG_INDEL} ${KGPHASE1_INDEL} Preprocess
+	@printf "\n[%s] %s\n" "$$(date +%Y\/%m\/%d\ %T)" "Start GATK RealignerTargetCreator"
+	@for i in ${_Output_Folder}/alignment/*.srt.dedup.rgmd.bam; do \
+		F=`basename $${i} .srt.dedup.rgmd.bam`; \
+		printf "\n[%s] %s\n" "$$(date +%Y\/%m\/%d\ %T)" "Start GATK RealignerTargetCreator for sample $${F}..."; \
+		\
+		java -jar ${GATK} -T RealignerTargetCreator \
+			-nt ${GATK_NMT} \
+			-nct 1 \
+			-R ${REF_FA} \
+			-I ${_Output_Folder}/alignment/$${F}.srt.dedup.rgmd.bam \
+			-known ${KGPHASE1_INDEL} \
+			-known ${MILLS_KG_INDEL} \
+			-o ${_Output_Folder}/alignment/$${F}.target_intervals.list; \
+		\
+		printf "\n[%s] %s\n" "$$(date +%Y\/%m\/%d\ %T)" "GATK RealignerTargetCreator for sample $${F} is done!"; \
+		done
+	@printf "\n[%s] %s\n" "$$(date +%Y\/%m\/%d\ %T)" "GATK RealignerTargetCreator for all sample in {_Output_Folder} is done!"
+
 
 
 
