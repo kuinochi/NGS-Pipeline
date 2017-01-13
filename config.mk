@@ -26,15 +26,14 @@ REF_NAME 	= hg19
 # --
 # -- FastQC will not name the output file properly if ending is '.fq'
 
-READ_DIR	= ./Read/
+READ_DIR	= /home/hpc/cychen/user/dungchi/tools/NGS-Pipeline/NGS-Pipeline/Read/
 
-READ_SE 	=
-
-READ_1 		= $(wildcard ${READ_DIR}/*.r1.fq)
-READ_2 		= $(wildcard ${READ_DIR}/*.r2.fq)
+#READ_SE 	=
+#READ_1 		= $(wildcard ${READ_DIR}/*.r1.fq)
+#READ_2 		= $(wildcard ${READ_DIR}/*.r2.fq)
 
 # Paired-end or single-end analysis? Must be either PE or SE
-READ_TYPE 	= 
+#READ_TYPE 	= 
 
 # Path to input .sam file
 IN_SAM 		=
@@ -53,8 +52,8 @@ SAMTOOL 		= /home/hpc/cychen/user/dungchi/bin/samtools-1.2/samtools
 BWA 			= /home/hpc/cychen/user/dungchi/bin/bwa-0.7.12/bwa
 BOWTIE2 		= /home/hpc/cychen/user/dungchi/bin/bowtie2-2.2.6/bowtie2 
 BOWTIE2_BUILD	= /home/hpc/cychen/user/dungchi/bin/bowtie2-2.2.6/bowtie2-build
-PICARD 			= java -jar /home/hpc/cychen/user/dungchi/bin/picard-tools-1.139/picard.jar
-GATK 			= java -jar /home/hpc/cychen/user/dungchi/bin/GATK/GenomeAnalysisTK.jar
+PICARD 			=  /home/hpc/cychen/user/dungchi/bin/picard-tools-1.139/picard.jar
+GATK 			=  /home/hpc/cychen/user/dungchi/bin/GATK/GenomeAnalysisTK.jar
 
 #ANNOVAR 		= $BIN/annovar
 #BCFTOOL 		= $BIN/bcftools/bcftools

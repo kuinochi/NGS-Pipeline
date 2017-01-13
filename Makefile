@@ -4,8 +4,6 @@
 # Please check the needed config.mk before running the pipeline
 #---------------------------------------------------------------------------------#
 
-#SHELL = !/bin/bash
-
 # Get user editable variables
 include config.mk
 
@@ -28,8 +26,7 @@ help:
 	"vairants_gatk  --  Variants Calling (SNP/INDELs) by samtools"
 
 
-Process: 		IndexRef ${BAM_FILE}
-variants_sam:		$
+variants_sam:		
 vairants_gatk:
 
 #=================================================================================#
@@ -39,46 +36,40 @@ vairants_gatk:
 # Output files of indexing.
 _SAMTOOLS_INDEX		= $(addsuffix .fai, ${REF_FA})
 _BWA_INDEX_END	 	= .amb .ann .bwt .pac .sa
-_BWA_INDEX			= $(addsuffix ${_BWA_INDEX_END}, ${REF_FA})
+#_BWA_INDEX			= $(addsuffix ${_BWA_INDEX_END}, ${REF_FA})
+_BWA_INDEX			= $(foreach bw, ${_BWA_INDEX_END}, ${REF_FA}${bw})
 _BOWTIE2_INDEX_END	= .1.bt2 .2.bt2 .3.bt2 .4.bt2 .rev.1.bt2 .rev.2.bt2
-_BOWTIE2_INDEX		= $(addsuffix ${_BOWTIE2_INDEX_END}, ${REF_FA})
+#_BOWTIE2_INDEX		= $(addsuffix ${_BOWTIE2_INDEX_END}, ${REF_FA})
+_BOWTIE2_INDEX		= $(foreach bt, ${_BOWTIE2_INDEX_END}, ${REF_FA}${bt})
 _PICARD_DICT		= $(addsuffix .dict, ${REF_FA})
+_Output_Folder = ./results
+
 
 IndexRef: ${_SAMTOOLS_INDEX} ${_BWA_INDEX} ${_BOWTIE2_INDEX} ${_PICARD_DICT}
-	@printf "\n%s\n%s\n\n" \
-	"The file:  ${REF_FA}  has been indexed." \
-	"Check the folder: ${REF_DIR}"
+	@printf "\n%s\n%s\n\n" "The file:  ${REF_FA}  has been indexed." "Check the folder: ${REF_DIR} "
 
 ${_SAMTOOLS_INDEX}: ${REF_FA}
-	@printf "\n%s\n" \
-	"#--- Start indexing by samtools..."
+	@printf "\n%s\n" "#--- Start indexing by samtools..."
 	${SAMTOOL} faidx $<
-	@printf "%s\n" \
-	"#--- Samtools Indexing is done!"
+	@printf "%s\n" "#--- Samtools Indexing is done!"
 	@touch ${_SAMTOOLS_INDEX}
 
 ${_BWA_INDEX}: ${REF_FA}
-	@printf "\n%s\n" \
-	"#--- Start indexing by bwa..."
+	@printf "\n%s\n" "#--- Start indexing by bwa..."
 	${BWA} index -a bwtsw $<
-	@printf "%s\n" \
-	"#--- BWA Indexing is done!"
+	@printf "%s\n" "#--- BWA Indexing is done!"
 	@touch ${_BWA_INDEX}
 
-${_BOWTIE2_INDEX}: ${REF_FA}
-	@printf "\n%s\n" \
-	"#--- Start indexing by bowtie2..."
-	${BOWTIE2_BUILD} $< $< 
-	@printf "%s\n" \
-	"#--- Bowtie2 Indexing is done!"
+${_BOWTIE2_INDEX}: ${REF_FA} ${REF_FA}
+	@printf "\n%s\n" "#--- Start indexing by bowtie2..."
+	${BOWTIE2_BUILD} $< $<
+	@printf "%s\n" "#--- Bowtie2 Indexing is done!"
 	@touch ${_BOWTIE2_INDEX}	
 
 ${_PICARD_DICT}: ${REF_FA}
-	@printf "\n%s\n" \
-	"#--- Start indexing by picard tools..."
-	${PICARD} CreateSequenceDictionary R=$< O=$@
-	@printf "%s\n" \
-	"#--- Picard Indexing is done!"
+	@printf "\n%s\n" "#--- Start indexing by picard tools..."
+	java -jar ${PICARD} CreateSequenceDictionary R=$< O=$@
+	@printf "%s\n" "#--- Picard Indexing is done!"
 	@touch ${_PICARD_DICT}
 
 
@@ -87,20 +78,27 @@ ${_PICARD_DICT}: ${REF_FA}
 #=================================================================================#
 
 alignment:	bwa bowtie2
+	@printf "\n%s\n%s\n\n" \
+	"The pair-end reads file in ${READ_DIR}  have all been mapped by both bwa-mem and bowtie2." \
+	"Check the folder: ${READ_DIR} and ${_Output_Folder}/alignment "
+
 
 #--- Align reads to the ref. genome by BWA
 
-bwa: 			results/alignment/*.bwa.sam
+bwa: ${_Output_Folder}/alignment/*.bwa.sam
+	@printf "\n%s\n%s\n\n" \
+	"The pair-end reads file in ${READ_DIR}  have all been mapped by bwa-mem." \
+	"Check the folder: ${READ_DIR} and ${_Output_Folder}/alignment "
 
-results/alignment/*.bwa.sam: ${READ_DIR}
-	@mkdir -p results/alignment/
+${_Output_Folder}/alignment/*.bwa.sam: ${READ_DIR}
+	@mkdir -p ${_Output_Folder}/alignment/
 	@printf "\n[%s] %s\n" "$$(date +%Y\/%m\/%d\ %T)" "Start bwa-mem alignment..."
 
 	@for i in ${READ_DIR}/*.r1.fastq;\
 	do F=`basename $$i .r1.fastq` ;\
 	printf "\n[%s] %s\n\n" "$$(date +%Y\/%m\/%d\ %T)" "Start align sample \"$$F\" ...";\
 	${BWA} ${BWA_PARAM} \
-		${REF_FA} ${READ_DIR}/$$F.r1.fastq ${READ_DIR}/$$F.r2.fastq > results/alignment/$$F.${REF_NAME}.bwa.sam ;\
+		${REF_FA} ${READ_DIR}/$$F.r1.fastq ${READ_DIR}/$$F.r2.fastq > ${_Output_Folder}/alignment/$$F.${REF_NAME}.bwa.sam ;\
 	printf "\n[%s] %s\n" "$$(date +%Y\/%m\/%d\ %T)" "Sample \"$$F\" alignment by bwa-mem is done!"; done\
 
 	@printf "\n[%s] %s\n\n" "$$(date +%Y\/%m\/%d\ %T)" "Mapping by bwa-mem of all samples in the folder \"${READ_DIR}\" is done!"
@@ -108,17 +106,20 @@ results/alignment/*.bwa.sam: ${READ_DIR}
 
 #--- Align reads to the ref. genome by bowite2
 
-bowtie2: 		results/alignment/*.bowtie2.sam
+bowtie2: 		${_Output_Folder}/alignment/*.bowtie2.sam
+	@printf "\n%s\n%s\n\n" \
+	"The pair-end reads file in ${READ_DIR}  have all been mapped by bowtie2." \
+	"Check the folder: ${READ_DIR} and ${_Output_Folder}/alignment "
 
-results/alignment/*.bowtie2.sam: ${READ_DIR} 
-	@mkdir -p results/alignment/
+${_Output_Folder}/alignment/*.bowtie2.sam: ${READ_DIR} 
+	@mkdir -p ${_Output_Folder}/alignment/
 	@printf "\n[%s] %s\n" "$$(date +%Y\/%m\/%d\ %T)" "Start bowtie2 alignment..."
 
 	@for i in ${READ_DIR}/*.r1.fastq; \
 	do F=`basename $$i .r1.fastq` ;\
 	printf "\n[%s] %s\n\n" "$$(date +%Y\/%m\/%d\ %T)" "Start align sample \"$$F\" ..." ;\
 	${BOWTIE2} ${BOWTIE2_PARAM} \
-	-1 ${READ_DIR}/$$F.r1.fastq -2 ${READ_DIR}/$$F.r2.fastq -S results/alignment/$$F.${REF_NAME}.bowtie2.sam;\
+	-1 ${READ_DIR}/$$F.r1.fastq -2 ${READ_DIR}/$$F.r2.fastq -S ${_Output_Folder}/alignment/$$F.${REF_NAME}.bowtie2.sam;\
 	printf "\n[%s] %s\n" "$$(date +%Y\/%m\/%d\ %T)" "Sample \"$$F\" alignment by bowtie2 is done!"; done\
 
 	@printf "\n[%s] %s\n\n" "$$(date +%Y\/%m\/%d\ %T)" "Mapping by bowtie2 of all samples in the folder \"${READ_DIR}\" is done!"
@@ -128,6 +129,18 @@ results/alignment/*.bowtie2.sam: ${READ_DIR}
 #----------------------      Alignment file process      -------------------------#
 #=================================================================================#
 
+Process:	${BAM_FILE}
+	@printf "%s" "${BAM_FILE}"
+	
+
+${BAM_FILE}: ${_Output_Folder}/alignment/*.srt.bam
+	@for i in ${_Output_Folder}/alignment/*.sam; \
+	do F=`basename $i .sam`; \
+	printf "\n[%s] %s\n" "$$(date +%Y\/%m\/%d\ %T)" "Start sorting Sample $${F} by Picard SortSam..."; \
+	java -jar ${PICARD} SortSam I=$${i}.sam O=${_Output_Folder}/alignment/$${F}.srt.bam SO=coordinate; \
+	printf "\n[%s] %s\n" "$$(date +%Y\/%m\/%d\ %T)" "Sorting Sample $${F} by Picard SortSam id done!"; \
+	done
+	@printf "\n[%s] %s\n" "$$(date +%Y\/%m\/%d\ %T)" "Sorting by Picard SortSam for all samples in ${_Output_Folder}alignment is done!"
 
 # for i in `ls *.sam`; do
 #    F=`basename $i .sam`
