@@ -46,7 +46,6 @@ _Output_Folder = ./results
 
 IndexRef: ${_SAMTOOLS_INDEX} ${_BWA_INDEX} ${_BOWTIE2_INDEX} ${_PICARD_DICT}
 	@printf "\n%s\n%s\n\n" "The file:  ${REF_FA}  has alreadey been indexed." "Check the folder: ${REF_DIR}" 
-	#${_PICARD_DICT}
 
 ${_SAMTOOLS_INDEX}: ${REF_FA}
 	@printf "\n%s\n" "#--- Start indexing by samtools..."
@@ -147,9 +146,8 @@ ${_Output_Folder}/alignment/*.bowtie2.sam: ${READ_DIR}
 #=================================================================================#
 
 Preprocess:	${_Output_Folder}/alignment/*.srt.dedup.rgmd.bai
-
-	@printf "\n%s\n\n" "All file in ${_Output_Folder}/alignment have already been processed."
-
+	@printf "\n%s\n\n" "All file in ${_Output_Folder}/alignment have already been preprocessed."
+	@touch ${_Output_Folder}/alignment/*.srt.dedup.rgmd.bai
 
 ${_Output_Folder}/alignment/*.srt.dedup.rgmd.bai:  ${_Output_Folder}/alignment/*.srt.dedup.rgmd.bam
 	@printf "\n[%s] %s\n" "$$(date +%Y\/%m\/%d\ %T)" "Start indexing bam files by Picard BuildBamIndex"
@@ -162,6 +160,7 @@ ${_Output_Folder}/alignment/*.srt.dedup.rgmd.bai:  ${_Output_Folder}/alignment/*
 		printf "\n[%s] %s\n" "$$(date +%Y\/%m\/%d\ %T)" "Indexing Sample $${F} by Picard BuildBamIndex is done!"; \
 	done
 	@printf "\n[%s] %s\n" "$$(date +%Y\/%m\/%d\ %T)" "Indexing bam file by Picard BuildBamIndex for all samples in ${_Output_Folder}/alignment is done!"
+	@touch ${_Output_Folder}/alignment/*.srt.dedup.rgmd.bai
 
 
 ${_Output_Folder}/alignment/*.srt.dedup.rgmd.bam: ${_Output_Folder}/alignment/*.srt.dedup.bam
@@ -215,12 +214,13 @@ ${_Output_Folder}/alignment/*.srt.bam:	${_Output_Folder}/alignment/*.sam
 #-----------------------        GATK Preprocess        ---------------------------#
 #=================================================================================#
 
-GATK_preprocess: ${_Output_Folder}/alignment/*.realign.recal.bam
+GATK_preprocess: ${_Output_Folder}/alignment/*.realign.recal.bai
+	@touch ${_Output_Folder}/alignment/*.realign.recal.bai
 	@printf "\n%s\n%s\n\n" "The bam file in ${_Output_Folder}/alignment have all conducted the GATK processing:" \
 	"RealignerTargetCreator --> IndelRealigner --> BaseRecalibrator --> PrintReads" \
 	"You can go next step (e.g. variants calling) now."
 
-${_Output_Folder}/alignment/*.realign.recal.bam: ${_Output_Folder}/alignment/*.base.recali.table
+${_Output_Folder}/alignment/*.realign.recal.bai: ${_Output_Folder}/alignment/*.base.recali.table
 	@printf "\n[%s] %s\n" "$$(date +%Y\/%m\/%d\ %T)" "Start GATK PrintReads"
 	@for i in ${_Output_Folder}/alignment/*.base.recali.table; do \
 		F=`basename $${i} .base.recali.table`; \
@@ -235,10 +235,10 @@ ${_Output_Folder}/alignment/*.realign.recal.bam: ${_Output_Folder}/alignment/*.b
 		\
 		printf "\n[%s] %s\n" "$$(date +%Y\/%m\/%d\ %T)" "GATK PrintReads for sample $${F} is done!"; \
 		done
-	@printf "\n[%s] %s\n" "$$(date +%Y\/%m\/%d\ %T)" "GATK PrintReads for all sample in {_Output_Folder} is done!"
+	@printf "\n[%s] %s\n" "$$(date +%Y\/%m\/%d\ %T)" "GATK PrintReads for all sample in ${_Output_Folder} is done!"
 
 
-${_Output_Folder}/alignment/*.base.recali.table: ${MILLS_KG_INDEL} ${DBSNP_138} ${KGPHASE1_INDEL} ${_Output_Folder}/alignment/*.realign.bam
+${_Output_Folder}/alignment/*.base.recali.table: ${MILLS_KG_INDEL} ${DBSNP_138} ${KGPHASE1_INDEL} ${_Output_Folder}/alignment/*.realign.bai
 	@printf "\n[%s] %s\n" "$$(date +%Y\/%m\/%d\ %T)" "Start GATK BaseRecalibrator"
 	@for i in ${_Output_Folder}/alignment/*.realign.bam; do \
 		F=`basename $${i} .realign.bam`; \
@@ -256,10 +256,10 @@ ${_Output_Folder}/alignment/*.base.recali.table: ${MILLS_KG_INDEL} ${DBSNP_138} 
 		\
 		printf "\n[%s] %s\n" "$$(date +%Y\/%m\/%d\ %T)" "GATK BaseRecalibrator for sample $${F} is done!"; \
 		done
-	@printf "\n[%s] %s\n" "$$(date +%Y\/%m\/%d\ %T)" "GATK BaseRecalibrator for all sample in {_Output_Folder} is done!"
+	@printf "\n[%s] %s\n" "$$(date +%Y\/%m\/%d\ %T)" "GATK BaseRecalibrator for all sample in ${_Output_Folder} is done!"
 
 
-${_Output_Folder}/alignment/*.realign.bam: ${MILLS_KG_INDEL} ${KGPHASE1_INDEL} ${_Output_Folder}/alignment/*.target_intervals.list
+${_Output_Folder}/alignment/*.realign.bai: ${MILLS_KG_INDEL} ${KGPHASE1_INDEL} ${_Output_Folder}/alignment/*.target_intervals.list
 	@printf "\n[%s] %s\n" "$$(date +%Y\/%m\/%d\ %T)" "Start GATK IndelRealigner"
 	@for i in ${_Output_Folder}/alignment/*.target_intervals.list; do \
 		F=`basename $${i} .target_intervals.list`; \
@@ -276,7 +276,7 @@ ${_Output_Folder}/alignment/*.realign.bam: ${MILLS_KG_INDEL} ${KGPHASE1_INDEL} $
 		\
 		printf "\n[%s] %s\n" "$$(date +%Y\/%m\/%d\ %T)" "GATK IndelRealigner for sample $${F} is done!"; \
 		done
-	@printf "\n[%s] %s\n" "$$(date +%Y\/%m\/%d\ %T)" "GATK IndelRealigner for all sample in {_Output_Folder} is done!"
+	@printf "\n[%s] %s\n" "$$(date +%Y\/%m\/%d\ %T)" "GATK IndelRealigner for all sample in ${_Output_Folder} is done!"
 
 
 ${_Output_Folder}/alignment/*.target_intervals.list: ${MILLS_KG_INDEL} ${KGPHASE1_INDEL} Preprocess
@@ -296,7 +296,7 @@ ${_Output_Folder}/alignment/*.target_intervals.list: ${MILLS_KG_INDEL} ${KGPHASE
 		\
 		printf "\n[%s] %s\n" "$$(date +%Y\/%m\/%d\ %T)" "GATK RealignerTargetCreator for sample $${F} is done!"; \
 		done
-	@printf "\n[%s] %s\n" "$$(date +%Y\/%m\/%d\ %T)" "GATK RealignerTargetCreator for all sample in {_Output_Folder} is done!"
+	@printf "\n[%s] %s\n" "$$(date +%Y\/%m\/%d\ %T)" "GATK RealignerTargetCreator for all sample in ${_Output_Folder} is done!"
 
 
 
@@ -305,16 +305,16 @@ ${_Output_Folder}/alignment/*.target_intervals.list: ${MILLS_KG_INDEL} ${KGPHASE
 #------------------------       Variants Calling       ---------------------------#
 #=================================================================================#
 
-callvariant_sam: ${_Output_Folder}/vcf/*.samtools.vcf
+callvariant_sam: ${_Output_Folder}/vcf/*.samtools.raw.vcf
 	@printf "\n%s\n%s\n\n" \
 	"The bam file in ${_Output_Folder}/alignment have all conducted the variants calling by samtools." \
 	"Check the folder: ${_Output_Folder}/vcf/ and ${_Output_Folder}/alignment/ "
 
-${_Output_Folder}/vcf/*.samtools.vcf: ${_Output_Folder}/alignment/*.srt.dedup.rgmd.bai
+${_Output_Folder}/vcf/*.samtools.raw.vcf: ${_Output_Folder}/alignment/*.${REF_NAME}.*.realign.recal.bai
 	@mkdir -p ${_Output_Folder}/vcf
 	@printf "\n[%s] %s\n" "$$(date +%Y\/%m\/%d\ %T)" "Start calling variants by samtools"
-	@for i in ${_Output_Folder}/alignment/*.srt.dedup.rgmd.bam; do \
-		F=`basename $${i} .srt.dedup.rgmd.bam`; \
+	@for i in ${_Output_Folder}/alignment/*.${REF_NAME}.*.realign.recal.bam; do \
+		F=`basename $${i} .realign.recal.bam`; \
 		printf "\n[%s] %s\n" "$$(date +%Y\/%m\/%d\ %T)" "Start calling variants for sample $${F} by samtools..."; \
 		\
 		${SAMTOOL} mpileup \
@@ -330,23 +330,25 @@ ${_Output_Folder}/vcf/*.samtools.vcf: ${_Output_Folder}/alignment/*.srt.dedup.rg
 	@printf "\n[%s] %s\n" "$$(date +%Y\/%m\/%d\ %T)" "Calling variants for all sample in ${_Output_Folder}/alignment by samtools is done!"
 
 
+callvariant_gatk: ${_Output_Folder}/vcf/*.gatk.raw.vcf
 
-
-
-#---- Local realignment, step 1: RealignTargetCreator
-results/${ID}.bwa.target_interval.list: 
-	${GATK} -T RealignerTargetCreator -nt 20 -nct 1 -R $REF -I $F.srt.dedup.rgmd.bam /
-	-known $KNOWN/1000G_phase1.indels.b37.vcf.gz -known $KNOWN/Mills_and_1000G_gold_standard.indels.b37.vcf.gz -o $F.target_intervals.list
-          
-
-#---- Local realignment, step 2: IndelRealigner
-
-results/${IND_ID_W_PE_SE}.bwa.${GENOME_NAME}.passed.realn.bam: 
-	
-#---- Base Recalibraiont, step 1: 
-
-
-
-#---- Variant calling, HaplotypeCaller
-
-#/pkg/java/jdk1.8.0/bin/java -Xmx16g -jar /home/u00yhl02/software/20150613/GenomeAnalysisTK-3.4-0/GenomeAnalysisTK.jar -T HaplotypeCaller -R /work3/u00yhl02/references/ucsc.hg19.fasta -I /work3/u00yhl02/TSC_fastq/TSC002A/TSC002A_11132015_bwamem.marked.realigned.fixed.recal.indexed.bam --dbsnp /work3/u00yhl02/references/dbsnp_137.hg19.vcf -o /work3/u00yhl02/TSC_fastq/TSC002A/TSC002A_11132015_bwamem.haplotype.SnpIndel.vcf -stand_call_conf 50.0 -stand_emit_conf 10.0 -A AlleleBalance -rf BadCigar
+${_Output_Folder}/vcf/*.gatk.raw.vcf: ${_Output_Folder}/alignment/*.${REF_NAME}.*.realign.recal.bai
+	@mkdir -p ${_Output_Folder}/vcf
+	@printf "\n[%s] %s\n" "$$(date +%Y\/%m\/%d\ %T)" "Start GATK HaplotypeCaller"
+	@for i in ${_Output_Folder}/alignment/*.${REF_NAME}.*.realign.recal.bam; do \
+		F=`basename $${i} .realign.recal.bam`; \
+		printf "\n[%s] %s\n" "$$(date +%Y\/%m\/%d\ %T)" "Start GATK HaplotypeCaller for sample $${F}..."; \
+		\
+		java -jar ${GATK} -T HaplotypeCaller \
+		-R ${REF_FA} \
+		-I ${_Output_Folder}/alignment/$${F}.srt.dedup.rgmd.bam \
+		-o ${_Output_Folder}/vcf/$${F}.gatk.raw.vcf \
+		-stand_call_conf 50.0 \
+		-stand_emit_conf 10.0 \
+		-A AlleleBalance \
+		-rf BadCigar \
+		--dbsnp ${DBSNP_138}; \
+		\
+		printf "\n[%s] %s\n" "$$(date +%Y\/%m\/%d\ %T)" "GATK HaplotypeCaller for sample $${F} is done!"; \
+	done
+	@printf "\n[%s] %s\n" "$$(date +%Y\/%m\/%d\ %T)" "Calling variants for all sample in ${_Output_Folder}/alignment by GATK HaplotypeCaller is done!"
