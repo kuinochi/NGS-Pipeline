@@ -1,3 +1,5 @@
+# This is a sample-pipeline for WGS resequencing analysis.
+
 # The reference fasta:
 
     # The reference sequence was generate by ucsc.hg19.fasta
