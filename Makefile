@@ -56,10 +56,10 @@ ${_SAMTOOLS_INDEX}: ${REF_FA}
 	@touch ${_SAMTOOLS_INDEX}
 
 ${_BWA_INDEX}: ${REF_FA}
-	@printf "\n%s\n" "#--- Start indexing by bwa..."
+	@printf "\n%s\n" "#--- Start indexing by bwa... # -a bwtsw"
 	
-	${BWA} index -a bwtsw $<
-	
+	${BWA} index $<
+	 
 	@printf "%s\n" "#--- BWA Indexing is done!"
 	@touch ${_BWA_INDEX}
 
@@ -102,16 +102,15 @@ ${_Output_Folder}/alignment/*.bwa.sam: ${READ_DIR}
 	@printf "\n[%s] %s\n" "$$(date +%Y\/%m\/%d\ %T)" "Start bwa-mem alignment..."
 
 	@for i in ${READ_DIR}/*.r1.fastq;\
-		do F=`basename $$i .r1.fastq` ;\
+		do F=`basename $${i} .r1.fastq` ;\
 		printf "\n[%s] %s\n\n" "$$(date +%Y\/%m\/%d\ %T)" "Start align sample \"$${F}\" ...";\
 		\
-		-R "@RG\tID:$group\tSM:$sample\tPL:$platform"
 		${BWA} ${BWA_PARAM} \
-			${REF_FA} \
-			-R "@RG\tID:gp_$${F}\tSM:sm_$${F}\tPL:pl_$${F}" \
-			${READ_DIR}/$${F}.r1.fastq \
-			${READ_DIR}/$${F}.r2.fastq \
-			> ${_Output_Folder}/alignment/$${F}.${REF_NAME}.bwa.sam ;\
+		-R "@RG\tID:gp_$${F}\tSM:sm_$${F}\tPL:pl_$${F}" \
+		${REF_FA} \
+		${READ_DIR}/$${F}.r1.fastq \
+		${READ_DIR}/$${F}.r2.fastq \
+		> ${_Output_Folder}/alignment/$${F}.${REF_NAME}.bwa.sam ;\
 		\
 	printf "\n[%s] %s\n" "$$(date +%Y\/%m\/%d\ %T)" "Sample \"$${F}\" alignment by bwa-mem is done!"; done\
 
@@ -147,14 +146,47 @@ ${_Output_Folder}/alignment/*.bowtie2.sam: ${READ_DIR}
 #----------------------      Alignment file process      -------------------------#
 #=================================================================================#
 
-Preprocess:	${_Output_Folder}/alignment/*.srt.dedup.rgmd.bai
-	@printf "\n%s\n\n" "All file in ${_Output_Folder}/alignment have already been preprocessed."
-	@touch ${_Output_Folder}/alignment/*.srt.dedup.rgmd.bai
+# Preprocess:	${_Output_Folder}/alignment/*.srt.dedup.rgmd.bai
+# 	@printf "\n%s\n\n" "All file in ${_Output_Folder}/alignment have already been preprocessed."
+# 	@touch ${_Output_Folder}/alignment/*.srt.dedup.rgmd.bai
 
-${_Output_Folder}/alignment/*.srt.dedup.rgmd.bai:  ${_Output_Folder}/alignment/*.srt.dedup.rgmd.bam
+# ${_Output_Folder}/alignment/*.srt.dedup.rgmd.bai:  ${_Output_Folder}/alignment/*.srt.dedup.rgmd.bam
+# 	@printf "\n[%s] %s\n" "$$(date +%Y\/%m\/%d\ %T)" "Start indexing bam files by Picard BuildBamIndex"
+# 	@for i in ${_Output_Folder}/alignment/*.srt.dedup.rgmd.bam; do \
+# 		F=`basename $${i} .srt.dedup.rgmd.bam`; \
+# 		printf "\n[%s] %s\n" "$$(date +%Y\/%m\/%d\ %T)" "Start indexing Sample $${F} by Picard BuildBamIndex..."; \
+# 		\
+# 		java -jar ${PICARD} BuildBamIndex I=$${i} ; \
+# 		\
+# 		printf "\n[%s] %s\n" "$$(date +%Y\/%m\/%d\ %T)" "Indexing Sample $${F} by Picard BuildBamIndex is done!"; \
+# 	done
+# 	@printf "\n[%s] %s\n" "$$(date +%Y\/%m\/%d\ %T)" "Indexing bam file by Picard BuildBamIndex for all samples in ${_Output_Folder}/alignment is done!"
+# 	@touch ${_Output_Folder}/alignment/*.srt.dedup.rgmd.bai
+
+
+# ${_Output_Folder}/alignment/*.srt.dedup.rgmd.bam: ${_Output_Folder}/alignment/*.srt.dedup.bam
+# 	@printf "\n[%s] %s\n" "$$(date +%Y\/%m\/%d\ %T)" "Start edit @RG tag in bam files by Picard AddOrReplaceReadGroups"
+# 	@for i in ${_Output_Folder}/alignment/*.srt.dedup.bam; do \
+# 		F=`basename $${i} .srt.dedup.bam`; \
+# 		printf "\n[%s] %s\n" "$$(date +%Y\/%m\/%d\ %T)" "Start Edit @RG for Sample $${F} by Picard AddOrReplaceReadGroups..."; \
+# 		\
+# 		java -jar ${PICARD} AddOrReplaceReadGroups \
+# 			I=$${i} \
+# 			O=${_Output_Folder}/alignment/$${F}.srt.dedup.rgmd.bam \
+# 			RGID=$${F} RGSM=S_$${F} RGLB=Lib_$${F} RGPL=Illumina RGPU=Unit_$${F};\
+# 		\
+# 		printf "\n[%s] %s\n" "$$(date +%Y\/%m\/%d\ %T)" "@RG is edited Sample $${F} by Picard AddOrReplaceReadGroups is done!";\
+# 	done
+# 	@printf "\n[%s] %s\n" "$$(date +%Y\/%m\/%d\ %T)" "@RG is edited by Picard AddOrReplaceReadGroups for all sample in ${_Output_Folder}/alignment!"
+
+Preprocess:	${_Output_Folder}/alignment/*.srt.dedup.bam.bai
+	@printf "\n%s\n\n" "All file in ${_Output_Folder}/alignment have already been preprocessed."
+	@touch ${_Output_Folder}/alignment/*.srt.dedup.bai
+
+${_Output_Folder}/alignment/*.srt.dedup.bam.bai: ${_Output_Folder}/alignment/*.srt.dedup.bam
 	@printf "\n[%s] %s\n" "$$(date +%Y\/%m\/%d\ %T)" "Start indexing bam files by Picard BuildBamIndex"
-	@for i in ${_Output_Folder}/alignment/*.srt.dedup.rgmd.bam; do \
-		F=`basename $${i} .srt.dedup.rgmd.bam`; \
+	@for i in ${_Output_Folder}/alignment/*.srt.dedup.bam; do \
+		F=`basename $${i} .srt.dedup.bam`; \
 		printf "\n[%s] %s\n" "$$(date +%Y\/%m\/%d\ %T)" "Start indexing Sample $${F} by Picard BuildBamIndex..."; \
 		\
 		java -jar ${PICARD} BuildBamIndex I=$${i} ; \
@@ -162,23 +194,7 @@ ${_Output_Folder}/alignment/*.srt.dedup.rgmd.bai:  ${_Output_Folder}/alignment/*
 		printf "\n[%s] %s\n" "$$(date +%Y\/%m\/%d\ %T)" "Indexing Sample $${F} by Picard BuildBamIndex is done!"; \
 	done
 	@printf "\n[%s] %s\n" "$$(date +%Y\/%m\/%d\ %T)" "Indexing bam file by Picard BuildBamIndex for all samples in ${_Output_Folder}/alignment is done!"
-	@touch ${_Output_Folder}/alignment/*.srt.dedup.rgmd.bai
-
-
-${_Output_Folder}/alignment/*.srt.dedup.rgmd.bam: ${_Output_Folder}/alignment/*.srt.dedup.bam
-	@printf "\n[%s] %s\n" "$$(date +%Y\/%m\/%d\ %T)" "Start edit @RG tag in bam files by Picard AddOrReplaceReadGroups"
-	@for i in ${_Output_Folder}/alignment/*.srt.dedup.bam; do \
-		F=`basename $${i} .srt.dedup.bam`; \
-		printf "\n[%s] %s\n" "$$(date +%Y\/%m\/%d\ %T)" "Start Edit @RG for Sample $${F} by Picard AddOrReplaceReadGroups..."; \
-		\
-		java -jar ${PICARD} AddOrReplaceReadGroups \
-			I=$${i} \
-			O=${_Output_Folder}/alignment/$${F}.srt.dedup.rgmd.bam \
-			RGID=$${F} RGSM=S_$${F} RGLB=Lib_$${F} RGPL=Illumina RGPU=Unit_$${F};\
-		\
-		printf "\n[%s] %s\n" "$$(date +%Y\/%m\/%d\ %T)" "@RG is edited Sample $${F} by Picard AddOrReplaceReadGroups is done!";\
-	done
-	@printf "\n[%s] %s\n" "$$(date +%Y\/%m\/%d\ %T)" "@RG is edited by Picard AddOrReplaceReadGroups for all sample in ${_Output_Folder}/alignment!"
+	@touch ${_Output_Folder}/alignment/*.srt.dedup.bai
 
 
 ${_Output_Folder}/alignment/*.srt.dedup.bam: ${_Output_Folder}/alignment/*.srt.bam
