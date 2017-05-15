@@ -43,8 +43,8 @@ KGPHASE1_INDEL=/home/hpc/cychen/user/dungchi/reference/knownvcf/1000G_phase1.ind
 BWA 			= /home/hpc/cychen/user/dungchi/bin/bwa-0.7.12/bwa
 BOWTIE2 		= /home/hpc/cychen/user/dungchi/bin/bowtie2-2.2.6/bowtie2 
 BOWTIE2_BUILD	= /home/hpc/cychen/user/dungchi/bin/bowtie2-2.2.6/bowtie2-build
-PICARD 			=  /home/hpc/cychen/user/dungchi/bin/picard-tools-1.139/picard.jar
-GATK 			=  /home/hpc/cychen/user/dungchi/bin/GATK/GenomeAnalysisTK.jar
+PICARD 			= /home/hpc/cychen/user/dungchi/bin/picard-tools-1.139/picard.jar
+GATK 			= /home/hpc/cychen/user/dungchi/bin/GATK/GenomeAnalysisTK.jar
 SAMTOOL 		= /home/hpc/cychen/user/dungchi/bin/samtools-1.2/samtools
 BCFTOOL 		= /home/hpc/cychen/user/dungchi/bin/bcftool
 #BEDTOOLS		=
@@ -59,7 +59,7 @@ BCFTOOL 		= /home/hpc/cychen/user/dungchi/bin/bcftool
 CPU = 1
 
 # BWA parameters
-BWA_PARAM 		= mem -t ${CPU} -a -M
+BWA_PARAM 		= mem -t ${CPU} -a -M -K 10000000 
 
 # Bowtie2 parameters
 BOWTIE2_PARAM 	= --end-to-end --sensitive -p ${CPU} -x ${REF_FA} -q

@@ -105,8 +105,10 @@ ${_Output_Folder}/alignment/*.bwa.sam: ${READ_DIR}
 		do F=`basename $$i .r1.fastq` ;\
 		printf "\n[%s] %s\n\n" "$$(date +%Y\/%m\/%d\ %T)" "Start align sample \"$${F}\" ...";\
 		\
+		-R "@RG\tID:$group\tSM:$sample\tPL:$platform"
 		${BWA} ${BWA_PARAM} \
 			${REF_FA} \
+			-R "@RG\tID:gp_$${F}\tSM:sm_$${F}\tPL:pl_$${F}" \
 			${READ_DIR}/$${F}.r1.fastq \
 			${READ_DIR}/$${F}.r2.fastq \
 			> ${_Output_Folder}/alignment/$${F}.${REF_NAME}.bwa.sam ;\
