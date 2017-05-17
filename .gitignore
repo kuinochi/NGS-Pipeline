@@ -17,3 +17,6 @@ Ref/*.sa
 Ref/chrM.1000g.indel.vcf
 Ref/chrM.dbsnp138.vcf
 Ref/chrM.mills.vcf
+Ref/chrM.1000g.indel.vcf.idx
+Ref/chrM.dbsnp138.vcf.idx
+Ref/chrM.mills.vcf.idx
