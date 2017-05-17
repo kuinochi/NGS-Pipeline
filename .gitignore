@@ -20,3 +20,4 @@ Ref/chrM.mills.vcf
 Ref/chrM.1000g.indel.vcf.idx
 Ref/chrM.dbsnp138.vcf.idx
 Ref/chrM.mills.vcf.idx
+config.mk
