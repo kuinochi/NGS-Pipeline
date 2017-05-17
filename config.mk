@@ -23,10 +23,22 @@ REF_NAME 	= hg19
 # -- READ_DIR:	Define the path to .fastq files, 
 # -- 			The file must be in FASTQ format and end in '.fastq'
 # -- 			or in gzip'd FASTQ format and end in '.fastq.gz'
-# --
-# -- FastQC will not name the output file properly if ending is '.fq'
+# -- READ_1: 	Read 1 file name
+# -- READ_2: 	Read 2 file name
+# -- sNAME:		Sample Name
+# -- sRGID: 	Read group identifier,  each read group's ID must be unique
+# -- sRGSM:		The Name of the Sample in RG
+# -- sRGPL:		Sample platform, for GATK, Valid values: ILLUMINA, SOLID, LS454, HELICOS and PACBIO.
 
-READ_DIR	= ./Read/
+
+READ_DIR	= ./Read
+READ_1 		= ${READ_DIR}/mito_yoruba.r1.fastq
+READ_2		= ${READ_DIR}/mito_yoruba.r2.fastq
+sNAME		= mito_yoruba
+sRGID		= GP_${sNAME}
+sRGSM		= SM_${sNAME}
+sRGPL		= ILLUMINA
+_Output_Folder = ./results
 
 # ------------------------------------------------------ #
 # --- Paths to knownvcf files
@@ -47,7 +59,7 @@ BOWTIE2_BUILD	= bowtie2-build
 PICARD 			= picard.jar
 GATK 			= GenomeAnalysisTK.jar
 SAMTOOL 		= samtools
-BCFTOOL 		= bcftool
+BCFTOOL 		= bcftools
 #BEDTOOLS		=
 #VCFTOOLS		=
 #TABIX			=
