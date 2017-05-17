@@ -106,7 +106,7 @@ ${_Output_Folder}/alignment/*.bwa.sam: ${READ_DIR}
 		printf "\n[%s] %s\n\n" "$$(date +%Y\/%m\/%d\ %T)" "Start align sample \"$${F}\" ...";\
 		\
 		${BWA} ${BWA_PARAM} \
-		-R "@RG\tID:gp_$${F}\tSM:sm_$${F}\tPL:pl_$${F}" \
+		-R "@RG\tID:gp_$${F}\tSM:sm_$${F}\tPL:ILLUMINA" \
 		${REF_FA} \
 		${READ_DIR}/$${F}.r1.fastq \
 		${READ_DIR}/$${F}.r2.fastq \
@@ -277,6 +277,46 @@ ${_Output_Folder}/alignment/*.base.recali.table: ${MILLS_KG_INDEL} ${DBSNP_138} 
 	@printf "\n[%s] %s\n" "$$(date +%Y\/%m\/%d\ %T)" "GATK BaseRecalibrator for all sample in ${_Output_Folder} is done!"
 
 
+# ${_Output_Folder}/alignment/*.realign.bai: ${MILLS_KG_INDEL} ${KGPHASE1_INDEL} ${_Output_Folder}/alignment/*.target_intervals.list
+# 	@printf "\n[%s] %s\n" "$$(date +%Y\/%m\/%d\ %T)" "Start GATK IndelRealigner"
+# 	@for i in ${_Output_Folder}/alignment/*.target_intervals.list; do \
+# 		F=`basename $${i} .target_intervals.list`; \
+# 		printf "\n[%s] %s\n" "$$(date +%Y\/%m\/%d\ %T)" "Start GATK IndelRealigner for sample $${F}..."; \
+# 		\
+# 		java -jar ${GATK} -T IndelRealigner \
+# 			-R ${REF_FA} \
+# 			-I ${_Output_Folder}/alignment/$${F}.srt.dedup.rgmd.bam \
+# 			-known ${MILLS_KG_INDEL} \
+# 			-known ${KGPHASE1_INDEL} \
+# 			-targetIntervals ${_Output_Folder}/alignment/$${F}.target_intervals.list \
+# 			-o ${_Output_Folder}/alignment/$${F}.realign.bam \
+# 			--filter_bases_not_stored; \
+# 		\
+# 		printf "\n[%s] %s\n" "$$(date +%Y\/%m\/%d\ %T)" "GATK IndelRealigner for sample $${F} is done!"; \
+# 		done
+# 	@printf "\n[%s] %s\n" "$$(date +%Y\/%m\/%d\ %T)" "GATK IndelRealigner for all sample in ${_Output_Folder} is done!"
+
+
+# ${_Output_Folder}/alignment/*.target_intervals.list: ${MILLS_KG_INDEL} ${KGPHASE1_INDEL} Preprocess
+# 	@printf "\n[%s] %s\n" "$$(date +%Y\/%m\/%d\ %T)" "Start GATK RealignerTargetCreator"
+# 	@for i in ${_Output_Folder}/alignment/*.srt.dedup.rgmd.bam; do \
+# 		F=`basename $${i} .srt.dedup.rgmd.bam`; \
+# 		printf "\n[%s] %s\n" "$$(date +%Y\/%m\/%d\ %T)" "Start GATK RealignerTargetCreator for sample $${F}..."; \
+# 		\
+# 		java -jar ${GATK} -T RealignerTargetCreator \
+# 			-nt ${GATK_NMT} \
+# 			-nct 1 \
+# 			-R ${REF_FA} \
+# 			-I ${_Output_Folder}/alignment/$${F}.srt.dedup.rgmd.bam \
+# 			-known ${KGPHASE1_INDEL} \
+# 			-known ${MILLS_KG_INDEL} \
+# 			-o ${_Output_Folder}/alignment/$${F}.target_intervals.list; \
+# 		\
+# 		printf "\n[%s] %s\n" "$$(date +%Y\/%m\/%d\ %T)" "GATK RealignerTargetCreator for sample $${F} is done!"; \
+# 		done
+# 	@printf "\n[%s] %s\n" "$$(date +%Y\/%m\/%d\ %T)" "GATK RealignerTargetCreator for all sample in ${_Output_Folder} is done!"
+
+
 ${_Output_Folder}/alignment/*.realign.bai: ${MILLS_KG_INDEL} ${KGPHASE1_INDEL} ${_Output_Folder}/alignment/*.target_intervals.list
 	@printf "\n[%s] %s\n" "$$(date +%Y\/%m\/%d\ %T)" "Start GATK IndelRealigner"
 	@for i in ${_Output_Folder}/alignment/*.target_intervals.list; do \
@@ -285,7 +325,7 @@ ${_Output_Folder}/alignment/*.realign.bai: ${MILLS_KG_INDEL} ${KGPHASE1_INDEL} $
 		\
 		java -jar ${GATK} -T IndelRealigner \
 			-R ${REF_FA} \
-			-I ${_Output_Folder}/alignment/$${F}.srt.dedup.rgmd.bam \
+			-I ${_Output_Folder}/alignment/$${F}.srt.dedup.bam \
 			-known ${MILLS_KG_INDEL} \
 			-known ${KGPHASE1_INDEL} \
 			-targetIntervals ${_Output_Folder}/alignment/$${F}.target_intervals.list \
@@ -299,15 +339,15 @@ ${_Output_Folder}/alignment/*.realign.bai: ${MILLS_KG_INDEL} ${KGPHASE1_INDEL} $
 
 ${_Output_Folder}/alignment/*.target_intervals.list: ${MILLS_KG_INDEL} ${KGPHASE1_INDEL} Preprocess
 	@printf "\n[%s] %s\n" "$$(date +%Y\/%m\/%d\ %T)" "Start GATK RealignerTargetCreator"
-	@for i in ${_Output_Folder}/alignment/*.srt.dedup.rgmd.bam; do \
-		F=`basename $${i} .srt.dedup.rgmd.bam`; \
+	@for i in ${_Output_Folder}/alignment/*.srt.dedup.bam; do \
+		F=`basename $${i} .srt.dedup.bam`; \
 		printf "\n[%s] %s\n" "$$(date +%Y\/%m\/%d\ %T)" "Start GATK RealignerTargetCreator for sample $${F}..."; \
 		\
 		java -jar ${GATK} -T RealignerTargetCreator \
 			-nt ${GATK_NMT} \
 			-nct 1 \
 			-R ${REF_FA} \
-			-I ${_Output_Folder}/alignment/$${F}.srt.dedup.rgmd.bam \
+			-I ${_Output_Folder}/alignment/$${F}.srt.dedup.bam \
 			-known ${KGPHASE1_INDEL} \
 			-known ${MILLS_KG_INDEL} \
 			-o ${_Output_Folder}/alignment/$${F}.target_intervals.list; \
@@ -359,7 +399,7 @@ ${_Output_Folder}/vcf/*.gatk.raw.vcf: ${_Output_Folder}/alignment/*.${REF_NAME}.
 		\
 		java -jar ${GATK} -T HaplotypeCaller \
 		-R ${REF_FA} \
-		-I ${_Output_Folder}/alignment/$${F}.srt.dedup.rgmd.bam \
+		-I ${_Output_Folder}/alignment/$${F}.realign.recal.bam \
 		-o ${_Output_Folder}/vcf/$${F}.gatk.raw.vcf \
 		-stand_call_conf 50.0 \
 		-stand_emit_conf 10.0 \

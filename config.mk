@@ -32,9 +32,10 @@ READ_DIR	= ./Read/
 # --- Paths to knownvcf files
 # ------------------------------------------------------ #
 
-MILLS_KG_INDEL=/home/hpc/cychen/user/dungchi/reference/knownvcf/Mills_and_1000G_gold_standard.indels.hg19.sites.vcf
-DBSNP_138=/home/hpc/cychen/user/dungchi/reference/knownvcf/dbsnp_138.hg19.vcf
-KGPHASE1_INDEL=/home/hpc/cychen/user/dungchi/reference/knownvcf/1000G_phase1.indels.hg19.sites.vcf
+MILLS_KG_INDEL	= Ref/chrM.mills.vcf
+DBSNP_138		= Ref/chrM.dbsnp138.vcf
+KGPHASE1_INDEL	= Ref/chrM.1000g.indel.vcf
+
 
 # ------------------------------------------------------ #
 # --- Paths to external programs     

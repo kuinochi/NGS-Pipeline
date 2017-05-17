@@ -14,3 +14,6 @@ Ref/*.pac
 Ref/*.rev.1.bt2
 Ref/*.rev.2.bt2
 Ref/*.sa
+Ref/chrM.1000g.indel.vcf
+Ref/chrM.dbsnp138.vcf
+Ref/chrM.mills.vcf
