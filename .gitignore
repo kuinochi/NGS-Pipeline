@@ -21,3 +21,4 @@ Ref/chrM.1000g.indel.vcf.idx
 Ref/chrM.dbsnp138.vcf.idx
 Ref/chrM.mills.vcf.idx
 config.mk
+origin_pipeline_for_compare.sh
